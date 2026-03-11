@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure mutual exclusivity of interest filters
     const showCb = document.getElementById('showInterested');
     const hideCb = document.getElementById('hideNotInterested');
+    const skipCb = document.getElementById('skipNotInterested');
     if (showCb && hideCb) {
         showCb.addEventListener('change', function() {
             if (this.checked) hideCb.checked = false;
@@ -36,6 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
         hideCb.addEventListener('change', function() {
             if (this.checked) showCb.checked = false;
             renderFilteredResults(); // hide is client-side
+        });
+        skipCb.addEventListener('change', function() {
+            if (this.checked) {
+                hideCb.checked = false;
+            }
+            renderFilteredResults();
         });
     }
 
@@ -466,6 +473,7 @@ function renderFilteredResults() {
 
     const showInterested = document.getElementById('showInterested')?.checked;
     const hideNotInterested = document.getElementById('hideNotInterested')?.checked;
+    const skipNotInterested = document.getElementById('skipNotInterested')?.checked;
     const showContact = document.getElementById('showContact')?.checked;
 
     let dataToRender = window.lastResultsData;
@@ -479,11 +487,16 @@ function renderFilteredResults() {
             if (hideNotInterested) {
                 filtered = filtered.filter(item => item.interest === 'not_interested');
             }
+            // NEW FILTER: exclude not_interested
+            if (skipNotInterested) {
+                filtered = filtered.filter(item => item.interest !== 'not_interested');
+            }
             if (showContact) {
                 filtered = filtered.filter(item => item.contact === true);
             }
             return filtered.length ? { ...group, results: filtered } : null;
-        })
+        }
+        )
         .filter(Boolean);
 
     const totalItems = dataToRender.reduce((acc, g) => acc + (g.results?.length || 0), 0);
@@ -491,7 +504,6 @@ function renderFilteredResults() {
     if (countEl) countEl.textContent = totalItems ? `${totalItems} listing${totalItems !== 1 ? 's' : ''}` : '';
 
     updateInterestedBadge();
-
     renderResults(dataToRender);
 }
 
@@ -505,6 +517,7 @@ export function applyFilters() {
     const groupBy       = document.getElementById('groupBy')?.value || 'isbn';
     const days          = document.getElementById('daysOld')?.value;
     const showInterested = document.getElementById('showInterested')?.checked;
+    const skipNotInterested = document.getElementById('skipNotInterested')?.checked;
     const showContact   = document.getElementById('showContact')?.checked;
 
     if (marketplace)  params.append('domains',   marketplace);
@@ -517,6 +530,9 @@ export function applyFilters() {
     }
     if (showInterested) {
         params.append('interest', 'interested');
+    }
+    if (skipNotInterested) {
+    params.append('exclude_not_interested', 'true');
     }
     if (showContact) {
         params.append('contact', 'true');
